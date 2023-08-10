@@ -168,7 +168,7 @@ export default function Home() {
                   {todo.text}
                 </div>
                 <RxCross2
-                  className="absolute right-5 top-1/2 -translate-y-1/2 hidden group-hover:block"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 block md:hidden group-hover:block"
                   onClick={() => handleDelete(todo.id)}
                 />
               </label>
