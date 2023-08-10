@@ -2,26 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+@layer components {
+  .linearGradientCustom {
+    background: linear-gradient(hsl(192, 100%, 67%), hsl(280, 87%, 65%));
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+.todoCheckBox {
+  appearance: none !important;
+  position: relative;
+}
+
+.circle {
+  position: absolute;
+  top: 50%;
+  left: 25px;
+  transform: translate(-50%, -50%);
+  height: 20px;
+  width: 20px;
+  border-radius: 100%;
+}
+
+.circle:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+input:checked ~ .circle:after {
+  display: block;
 }

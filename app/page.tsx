@@ -1,113 +1,220 @@
-import Image from 'next/image'
+"use client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useTheme } from "next-themes";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { useForm, type FieldValues } from "react-hook-form";
+import { toast } from "react-hot-toast";
+import { BsSun, BsMoon } from "react-icons/bs";
+import { RxCross2 } from "react-icons/rx";
+import { z } from "zod";
+
+const modeOptions = [
+  { value: "All" },
+  { value: "Active" },
+  { value: "Completed" },
+] as const;
+
+type Mode = (typeof modeOptions)[number]["value"];
+
+const todoSchema = z.object({
+  text: z.string().nonempty(),
+});
+
+type TodoForm = z.infer<typeof todoSchema>;
+
+type Todo = {
+  id: number;
+  text: string;
+  completed: boolean;
+};
 
 export default function Home() {
+  const { register, handleSubmit, reset } = useForm<TodoForm>({
+    resolver: zodResolver(todoSchema),
+  });
+  const { theme, systemTheme, setTheme } = useTheme();
+  const currentTheme = theme === "system" ? systemTheme : theme;
+  const [mode, setMode] = useState<Mode>("All");
+  const [todos, setTodos] = useState<Todo[]>([]);
+
+  const DragItem = useRef<number | null>(null);
+  const DragOverItem = useRef<number | null>(null);
+  const handleSortByDrag = () => {
+    if (DragItem.current && DragOverItem.current) {
+      const dragItemIndex = todos.findIndex(
+        (todo) => todo.id === DragItem.current
+      );
+      const dragOverItemIndex = todos.findIndex(
+        (todo) => todo.id === DragOverItem.current
+      );
+      const newTodos = [...todos];
+      newTodos.splice(dragItemIndex, 1);
+      newTodos.splice(dragOverItemIndex, 0, todos[dragItemIndex]);
+      setTodos(newTodos);
+    }
+  };
+
+  const handleClick = (id: number) => {
+    setTodos((prevTodos) => {
+      const newTodos = prevTodos.map((todo) => {
+        if (todo.id === id) {
+          return { ...todo, completed: !todo.completed };
+        }
+        return todo;
+      });
+      return newTodos;
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    setTodos((prevTodos) => {
+      const newTodos = prevTodos.filter((todo) => todo.id !== id);
+      return newTodos;
+    });
+  };
+
+  const handleClearCompleted = () => {
+    setTodos((prevTodos) => {
+      const newTodos = prevTodos.filter((todo) => !todo.completed);
+      return newTodos;
+    });
+    localStorage.setItem("todos", JSON.stringify(todos));
+  };
+
+  const onsubmit = (data: TodoForm) => {
+    const todoExists = todos?.some((todo) => {
+      return todo?.text?.toLowerCase() === data?.text?.toLowerCase();
+    });
+    if (todoExists) {
+      toast.error("Todo already exists");
+    }
+    if (!todoExists) {
+      const newTodo = { id: Date.now(), text: data.text, completed: false };
+      setTodos((prev) => [...prev, newTodo]);
+    }
+    reset();
+  };
+
+  const myTodos = {
+    All: todos,
+    Active: todos.filter((todo) => !todo.completed),
+    Completed: todos.filter((todo) => todo.completed),
+  }[mode];
+
+  useEffect(() => {
+    const data = localStorage.getItem("todos");
+    if (data) {
+      setTodos(JSON.parse(data));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  }, [todos]);
+
+  const activeTodosLength = todos.filter((todo) => !todo.completed).length;
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="relative h-screen flex justify-center">
+      <div className="content w-[500px] mt-32">
+        <div className="text flex justify-between items-center mb-10 text-white">
+          <h1 className="text-4xl font-bold tracking-widest ">TODO</h1>
+          <div
+            className="mode cursor-pointer"
+            onClick={() =>
+              theme == "dark" ? setTheme("light") : setTheme("dark")
+            }
           >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            {currentTheme === "light" ? (
+              <BsMoon size={30} />
+            ) : (
+              <BsSun size={30} />
+            )}
+          </div>
+        </div>
+        <form className="mb-10" onSubmit={handleSubmit(onsubmit)}>
+          <input
+            type="text"
+            className="dark:-bg--clr-DarkTheme-VeryDarkDesaturatedBlue w-full p-5 shadow-lg focus:border-none focus:outline-none rounded-md"
+            placeholder="Create a new todo..."
+            autoComplete="off"
+            {...register("text")}
+          />
+        </form>
+        <div className="results rounded-md shadow-lg bg-white dark:-bg--clr-DarkTheme-VeryDarkDesaturatedBlue">
+          {myTodos.map((todo) => {
+            return (
+              <label
+                htmlFor={`todo${todo.id}`}
+                draggable="true"
+                onDragStart={() => (DragItem.current = todo.id)}
+                onDragEnter={() => (DragOverItem.current = todo.id)}
+                onDragEnd={handleSortByDrag}
+                className="relative cursor-pointer group text capitalize w-full flex items-center gap-5 py-5 px-8 border-b dark:-border--clr-DarkTheme-VeryDarkGrayishBlue focus:border-none focus:outline-none "
+                key={todo.id}
+              >
+                <input
+                  type="checkbox"
+                  name={todo.text}
+                  id={`todo${todo.id}`}
+                  value={todo.text}
+                  defaultChecked={todo.completed}
+                  className="todoCheckBox peer linearGradientCustom"
+                  onClick={() => handleClick(todo?.id)}
+                />
+                <span className="circle group-hover:ring-[#d582ee] peer-checked:linearGradientCustom ring-1 peer-checked:ring-0 -ring--clr-LightTheme-LightGrayishBlue dark:-ring--clr-DarkTheme-DarkGrayishBlue/30" />
+                <div className="text -text--clr-LightTheme-VeryDarkGrayishBlue dark:-text--clr-DarkTheme-LightGrayishBlue peer-checked:line-through peer-checked:-text--clr-LightTheme-DarkGrayishBlue dark:peer-checked:-text--clr-LightTheme-DarkGrayishBlue">
+                  {todo.text}
+                </div>
+                <RxCross2
+                  className="absolute right-5 top-1/2 -translate-y-1/2 hidden group-hover:block"
+                  onClick={() => handleDelete(todo.id)}
+                />
+              </label>
+            );
+          })}
+          {todos.length > 0 && (
+            <div className="w-full flex items-center justify-between text-xs gap-5 p-5 dark:-text--clr-DarkTheme-VeryDarkGrayishBlue">
+              <div>{activeTodosLength} items left</div>
+              <ul className="flex items-center gap-4">
+                {modeOptions.map((option) => (
+                  <li
+                    key={option.value}
+                    className={`cursor-pointer ${
+                      mode === option.value
+                        ? "text-blue-500 font-bold"
+                        : "hover:font-bold hover:text-black dark:hover:text-white"
+                    }`}
+                    onClick={() => setMode(option.value)}
+                  >
+                    {option.value}
+                  </li>
+                ))}
+              </ul>
+              <div
+                onClick={handleClearCompleted}
+                className="hover:text-black dark:hover:text-white cursor-pointer"
+              >
+                Clear Completed
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      <Image
+        src={`/images/${
+          currentTheme === "light" ? "bg-desktop-light" : "bg-desktop-dark"
+        }.jpg`}
+        className="w-full h-2/5 object-cover absolute top-0 left-0 -z-10 select-none"
+        width={1440}
+        height={300}
+        alt="TopImage"
+      />
+      <div
+        className={`h-3/5 w-full bg-white dark:bg-[#181824] absolute bottom-0 left-0 -z-10 transition-colors duration-300`}
+      />
     </main>
-  )
+  );
 }
