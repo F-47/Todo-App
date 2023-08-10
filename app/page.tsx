@@ -116,7 +116,7 @@ export default function Home() {
   const activeTodosLength = todos.filter((todo) => !todo.completed).length;
 
   return (
-    <main className="relative h-screen flex justify-center">
+    <main className="relative h-screen flex justify-center p-5">
       <div className="content w-[500px] mt-32">
         <div className="text flex justify-between items-center mb-10 text-white">
           <h1 className="text-4xl font-bold tracking-widest ">TODO</h1>
@@ -142,7 +142,7 @@ export default function Home() {
             {...register("text")}
           />
         </form>
-        <div className="results rounded-md shadow-lg bg-white dark:-bg--clr-DarkTheme-VeryDarkDesaturatedBlue">
+        <div className="results shadow-lg bg-white dark:-bg--clr-DarkTheme-VeryDarkDesaturatedBlue">
           {myTodos.map((todo) => {
             return (
               <label
@@ -177,7 +177,7 @@ export default function Home() {
           {todos.length > 0 && (
             <div className="w-full flex items-center justify-between text-xs gap-5 p-5 dark:-text--clr-DarkTheme-VeryDarkGrayishBlue">
               <div>{activeTodosLength} items left</div>
-              <ul className="flex items-center gap-4">
+              <ul className="hidden md:flex items-center gap-4 ">
                 {modeOptions.map((option) => (
                   <li
                     key={option.value}
@@ -200,6 +200,26 @@ export default function Home() {
               </div>
             </div>
           )}
+        </div>
+        <div className="flex justify-center md:hidden mt-8 py-5 px-8 rounded-md shadow-lg bg-white dark:-bg--clr-DarkTheme-VeryDarkDesaturatedBlue">
+          <ul className="flex justify-center items-center gap-4">
+            {modeOptions.map((option) => (
+              <li
+                key={option.value}
+                className={`cursor-pointer text-xs ${
+                  mode === option.value
+                    ? "text-blue-500 font-bold"
+                    : "hover:font-bold hover:text-black dark:hover:text-white"
+                }`}
+                onClick={() => setMode(option.value)}
+              >
+                {option.value}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="text-center mt-7 text-sm -text--clr-LightTheme-DarkGrayishBlue dark:-text--clr-DarkTheme-VeryDarkGrayishBlue">
+          Drag and drop to reorder list
         </div>
       </div>
 
