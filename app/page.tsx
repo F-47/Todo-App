@@ -218,7 +218,7 @@ export default function Home() {
             ))}
           </ul>
         </div>
-        <div className="text-center mt-7 text-sm -text--clr-LightTheme-DarkGrayishBlue dark:-text--clr-DarkTheme-VeryDarkGrayishBlue">
+        <div className="hidden md:block text-center mt-7 text-sm -text--clr-LightTheme-DarkGrayishBlue dark:-text--clr-DarkTheme-VeryDarkGrayishBlue">
           Drag and drop to reorder list
         </div>
       </div>
